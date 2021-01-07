@@ -197,7 +197,7 @@ pub(crate) unsafe fn labrd<T>(
                 );
                 blas::gemv::conjtrans(
                     n_cols - i - 1,
-                    i - 1,
+                    i + 1,
                     T::one(),
                     y.offset((i + 1) as isize * y_row_stride),
                     y_row_stride,
@@ -387,7 +387,7 @@ pub(crate) unsafe fn labrd<T>(
                     a_row_stride,
                 );
                 blas::gemv::notrans(
-                    n_rows - i + 1,
+                    n_rows - i - 1,
                     i + 1,
                     -T::one(),
                     x.offset((i + 1) as isize * x_row_stride),
@@ -493,12 +493,13 @@ pub(crate) unsafe fn labrd<T>(
 
 #[cfg(test)]
 mod test {
-    use ndarray::{arr2, Array1, Array2, Axis};
+    use ndarray::{arr2, s, Array1, Array2, Axis};
 
     #[test]
-    fn wide() {
+    fn square() {
         let width = 1;
-        let mut a = arr2(&[[2_f64, 1_f64, 2_f64], [1_f64, 0_f64, -3_f64]]);
+        let a_orig = arr2(&[[12_f64, -51_f64, 4_f64], [6_f64, 167_f64, -68_f64], [-4_f64, 24_f64, -41_f64]]);
+        let mut a = a_orig.clone();
         let mut d = Array1::<f64>::zeros(width);
         let mut e = Array1::<f64>::zeros(width);
         let mut tau_q = Array1::<f64>::zeros(width);
@@ -525,8 +526,46 @@ mod test {
                 1,
             )
         };
+        println!("{}", tau_q);
+        println!("{}", tau_p);
         println!("{}", a);
-        println!("{}", x);
-        println!("{}", y);
+        assert_eq!(a.slice(s![width.., width..]), a_orig.slice(s![width.., width..]));
+    }
+
+    #[test]
+    fn wide() {
+        let width = 1;
+        let a_orig = arr2(&[[2_f64, 1_f64, 2_f64], [1_f64, 0_f64, -3_f64]]);
+        let mut a = a_orig.clone();
+        let mut d = Array1::<f64>::zeros(width);
+        let mut e = Array1::<f64>::zeros(width);
+        let mut tau_q = Array1::<f64>::zeros(width);
+        let mut tau_p = Array1::<f64>::zeros(width);
+        let mut x = Array2::<f64>::zeros((a.nrows(), width));
+        let mut y = Array2::<f64>::zeros((a.ncols(), width));
+        unsafe {
+            super::labrd(
+                a.nrows(),
+                a.ncols(),
+                width,
+                a.as_mut_ptr(),
+                a.stride_of(Axis(0)),
+                a.stride_of(Axis(1)),
+                d.as_mut_ptr(),
+                e.as_mut_ptr(),
+                tau_q.as_mut_ptr(),
+                tau_p.as_mut_ptr(),
+                x.as_mut_ptr(),
+                width as isize,
+                1,
+                y.as_mut_ptr(),
+                width as isize,
+                1,
+            )
+        };
+        println!("{}", tau_q);
+        println!("{}", tau_p);
+        println!("{}", a);
+        assert_eq!(a.slice(s![width.., width..]), a_orig.slice(s![width.., width..]));
     }
 }
