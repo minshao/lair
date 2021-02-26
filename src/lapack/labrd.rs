@@ -55,7 +55,7 @@ pub(crate) unsafe fn labrd<T>(
             let (beta, _, tau) = lapack::larfg(
                 *a.offset(i as isize * a_row_stride + i as isize * a_col_stride),
                 ArrayViewMut::from_shape_ptr(
-                    [n_rows - i].strides([a_row_stride as usize]),
+                    [n_rows - i - 1].strides([a_row_stride as usize]),
                     a.offset(
                         cmp::min(i + 1, n_rows - 1) as isize * a_row_stride
                             + i as isize * a_col_stride,
@@ -67,7 +67,6 @@ pub(crate) unsafe fn labrd<T>(
             *tau_q.offset(i as isize) = tau;
             if i + 1 < n_cols {
                 *a.offset(i as isize * a_row_stride + i as isize * a_col_stride) = T::one();
-
                 blas::gemv::conjtrans(
                     n_rows - i,
                     n_cols - i - 1,
@@ -140,7 +139,6 @@ pub(crate) unsafe fn labrd<T>(
                         y.offset((i + 1) as isize * y_row_stride + i as isize * y_col_stride),
                     ),
                 );
-
                 blas::gemv::notrans(
                     n_cols - i - 1,
                     i + 1,
@@ -526,10 +524,41 @@ mod test {
                 1,
             )
         };
+        dbg!(a.nrows());
+        dbg!(a.ncols());
+        dbg!(a.stride_of(Axis(0)));
+        dbg!(a.stride_of(Axis(1)));
         println!("{}", tau_q);
         println!("{}", tau_p);
         println!("{}", a);
+        println!("{}", x);
+        println!("{}", y);
         assert_eq!(a.slice(s![width.., width..]), a_orig.slice(s![width.., width..]));
+        assert!(false);
+    }
+
+    #[test]
+    fn householder() {
+        use super::*;
+        let a_orig = arr2(&[[12_f64, -51_f64, 4_f64], [6_f64, 167_f64, -68_f64], [-4_f64, 24_f64, -41_f64]]);
+        let mut a = a_orig.clone();
+        let (beta, tau) = unsafe {
+            let (beta, _, tau) = lapack::larfg(
+                *a.as_mut_ptr().offset(0_isize * 3 + 0_isize * 1),
+                ArrayViewMut::from_shape_ptr(
+                    [3 - 0].strides([3_usize]),
+                    a.as_mut_ptr().offset(
+                        std::cmp::min(1, 3 - 1) as isize * 3
+                            + 0_isize * 1,
+                    ),
+                ),
+            );
+            (beta, tau)
+        };
+        dbg!(beta);
+        dbg!(tau);
+        println!("{}", a);
+        assert!(false);
     }
 
     #[test]
@@ -566,6 +595,9 @@ mod test {
         println!("{}", tau_q);
         println!("{}", tau_p);
         println!("{}", a);
+        println!("{}", x);
+        println!("{}", y);
         assert_eq!(a.slice(s![width.., width..]), a_orig.slice(s![width.., width..]));
+        assert!(false);
     }
 }

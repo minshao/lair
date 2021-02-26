@@ -64,6 +64,16 @@ mod test {
     }
 
     #[test]
+    fn larfg_general() {
+        let x = arr1(&[12., 6., -4.]);
+        let (beta, x, tau) = super::larfg(1., x);
+        dbg!(x);
+        dbg!(beta);
+        dbg!(tau);
+        assert!(false);
+    }
+
+    #[test]
     fn larfg_complex() {
         let x = arr1(&[Complex64::new(2., 3.), Complex64::new(3., 2.)]);
         let (beta, x, tau) = super::larfg(Complex64::new(1., 1.), x);
